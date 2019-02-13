@@ -342,7 +342,7 @@ Create new columns from the top hashtags, if a tweet contains a given hashtag = 
 for tag in tags:
     df[tag] = df.hashtags.apply(lambda x: 1 if tag[1:] in x else 0)
 ```
-ทำการนับความถี่ของ hashtag ต่อนาที
+Count the number of hashtags per minute. I suggest using 'groupby' rather than 'resample'.
 
 ```python
 # Counting hashtags per minute
