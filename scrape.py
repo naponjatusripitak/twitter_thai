@@ -34,7 +34,7 @@ def tweet_search(api, query, max_tweets, max_id, since_id):
     searched_tweets = []
     try:
         new_tweets = []
-        for tweet in tweepy.Cursor(api.search,q=query, count=100, since_id=str(since_id), max_id=str(max_id-1)).items(max_tweets):
+        for tweet in tweepy.Cursor(api.search,q=query, count=100, tweet_mode='extended', since_id=str(since_id), max_id=str(max_id-1)).items(max_tweets):
             new_tweets.append(tweet)
         print('found',len(new_tweets),'tweets', api.rate_limit_status()['resources']['search'])
         if not new_tweets:
@@ -87,11 +87,12 @@ def main():
 
 
     ''' search variables: '''
-    search_phrases = ['#แม่มาแล้วธานอส', '#ไทยรักษาชาติ']
+    search_phrases = ['#เลือกตั้งปี62', '#แม่มาแล้วธานอส', '#พระราชโองการ', '#ทรงพระสแลนด์เดอร์', '#เลือกตั้ง2562']
+    
     time_limit = 240                          # runtime limit in hours
     max_tweets = 10000                           # number of tweets per search (will be
                                                # iterated over) - maximum is 100
-    min_days_old, max_days_old = 2, 4          # search limits e.g., from 7 to 8
+    min_days_old, max_days_old = 2, 8          # search limits e.g., from 7 to 8
                                                # gives current weekday from last week,
                                                # min_days_old=0 will search from right now
     #USA = '39.8,-95.583068847656,2500km'       # this geocode includes nearly all American
