@@ -84,7 +84,7 @@ def tweet_search(api, query, max_tweets, max_id, since_id):
     searched_tweets = []
     try:
         new_tweets = []
-        for tweet in tweepy.Cursor(api.search,q=query, count=100, since_id=str(since_id), max_id=str(max_id-1)).items(max_tweets):
+        for tweet in tweepy.Cursor(api.search,q=query, count=100, tweet_mode='extended', since_id=str(since_id), max_id=str(max_id-1)).items(max_tweets):
             new_tweets.append(tweet)
         print('found',len(new_tweets),'tweets', api.rate_limit_status()['resources']['search'])
         if not new_tweets:
@@ -101,6 +101,7 @@ def tweet_search(api, query, max_tweets, max_id, since_id):
 ```
 
 Second, we will use a function that searches for an id associated with the oldest tweet, which we will be using as the starting point for our scraping.
+
 
 ```python
 def get_tweet_id(api, date='', days_ago=9, query='a'):
@@ -141,7 +142,6 @@ def write_tweets(tweets, filename):
  Lastly, we need a main function for looping over all the search terms
  
  ```python
-
 def main():
     ''' This is a script that continuously searches for tweets
         that were created over a given number of days. The search
@@ -150,13 +150,12 @@ def main():
 
 
     ''' search variables: '''
-    search_phrases = ['#ไทยรักษาชาติ', '#ทรงพระสเลนเดอร์', '#เลือกตั้ง62',
-    '#เลือกตั้งปี62', '#แม่มาแล้วธานอส', '#พระราชโองการ', '#ทรงพระสแลนด์เดอร์']
+    search_phrases = ['#เลือกตั้งปี62', '#แม่มาแล้วธานอส', '#พระราชโองการ', '#ทรงพระสแลนด์เดอร์', '#เลือกตั้ง2562']
     
     time_limit = 240                          # runtime limit in hours
     max_tweets = 10000                           # number of tweets per search (will be
                                                # iterated over) - maximum is 100
-    min_days_old, max_days_old = 2, 4          # search limits e.g., from 7 to 8
+    min_days_old, max_days_old = 2, 8          # search limits e.g., from 7 to 8
                                                # gives current weekday from last week,
                                                # min_days_old=0 will search from right now
     #USA = '39.8,-95.583068847656,2500km'       # this geocode includes nearly all American
@@ -255,18 +254,51 @@ def hash_parse(tweet):
     return hashes
 ```
 
-Instead of loading all of the files into python and appending the info into a list, I would recommend processing the data line by line by writing them into csv and then reading them into pandas. Seems like a roundabout way to do things, but this is actually much faster than processing a large list.
+And a function for pasrsing texts from tweets:
+
+และ function สำหรับดึงข้อมูล text จาก tweet
 
 ```python
-# Load JSON files, go through each line, extract data, and write to csv 
-tweet_files = ['#ทรงพระสเลนเดอร์/#ทรงพระสเลนเดอร์_2019-02-07_to_2019-02-08.json',
-               '#ทรงพระแคนเซิล/#ทรงพระแคนเซิล_2019-02-07_to_2019-02-08.json',
-               '#ไทยรักษาชาติ/#ไทยรักษาชาติ_2019-02-07_to_2019-02-08.json',
-               '#พระราชโองการ/#พระราชโองการ_2019-02-07_to_2019-02-08.json',
-               '#เลือกตั้ง62/#เลือกตั้ง62_2019-02-07_to_2019-02-08.json',
-               '#เลือกตั้งปี62/#เลือกตั้งปี62_2019-02-07_to_2019-02-08.json',
-               '#แม่มาแล้วธานอส/#แม่มาแล้วธานอส_2019-02-07_to_2019-02-08.json'
+def getText(data):       
+    # Try for extended text of original tweet, if RT'd (streamer)
+    try: text = data['retweeted_status']['extended_tweet']['full_text']
+    except: 
+        # Try for extended text of an original tweet, if RT'd (REST API)
+        try: text = data['retweeted_status']['full_text']
+        except:
+            # Try for extended text of an original tweet (streamer)
+            try: text = data['extended_tweet']['full_text']
+            except:
+                # Try for extended text of an original tweet (REST API)
+                try: text = data['full_text']
+                except:
+                    # Try for basic text of original tweet if RT'd 
+                    try: text = data['retweeted_status']['text']
+                    except:
+                        # Try for basic text of an original tweet
+                        try: text = data['text']
+                        except: 
+                            # Nothing left to check for
+                            text = ''
+    return text
+```
+
+Instead of loading all of the files into python and appending the info into a list, I would recommend processing the data line by line by writing them into csv and then reading them into pandas. Seems like a roundabout way to do things, but this is actually much faster than processing a large list.
+
+
+```python
+# Load JSON files
+tweet_files = ['#ทรงพระสเลนเดอร์/#ทรงพระสเลนเดอร์_2019-02-07_to_2019-02-12.json',
+               '#ทรงพระสแลนด์เดอร์/#ทรงพระสแลนด์เดอร์_2019-02-07_to_2019-02-12.json',
+               '#ไทยรักษาชาติ/#ไทยรักษาชาติ_2019-02-07_to_2019-02-12.json',
+               '#พระราชโองการ/#พระราชโองการ_2019-02-07_to_2019-02-12.json',
+               '#เลือกตั้ง62/#เลือกตั้ง62_2019-02-07_to_2019-02-12.json',
+               '#เลือกตั้งปี62/#เลือกตั้งปี62_2019-02-07_to_2019-02-12.json',
+               '#เลือกตั้ง2562/#เลือกตั้ง2562_2019-02-07_to_2019-02-12.json',
+               '#แม่มาแล้วธานอส/#แม่มาแล้วธานอส_2019-02-07_to_2019-02-12.json'
               ]
+
+
 f = open('tweets.csv', 'w')
 writer = csv.writer(f)
 for file in tweet_files:
@@ -276,7 +308,7 @@ for file in tweet_files:
             tweets = []
             data = json.loads(line)
             tweets.extend([data['id'], data['created_at'], data['user']['screen_name'], data['user']['id'],
-                           data['text'], data['retweet_count'], data['favorite_count'], data['in_reply_to_status_id'],
+                           getText(data), data['retweet_count'], data['favorite_count'], data['in_reply_to_status_id'],
                            data['in_reply_to_user_id'], data['user']['location'], data['place']['full_name']
                            if data['place'] != None else '',
                            hash_parse(data['entities']['hashtags']), data['place']['country_code']
@@ -288,6 +320,7 @@ for file in tweet_files:
             writer.writerow(tweets)            
 f.close()
 ```
+
 ### Analysis and Visualization
 
 First, we read in the csv files.
@@ -305,7 +338,18 @@ Drop the duplicates.
 # Drop duplicates. This is an important step since a single tweet may contain multiple hashtags and we use the search api with hashtags as our query.
 df = df.drop_duplicates(subset='id')
 ```
+Convert 'created_at' into a datetime object, adjust for time difference and filter for tweets that were created between Feb 7-11
 
+```python
+df['time'] = pd.DatetimeIndex(df['created_at'])
+df['time'] = pd.to_datetime(df['time'], format='%Y-%b-%d %H:%M:%S.%f').dt.tz_localize('UTC').dt.tz_convert('Asia/Bangkok')
+df = df[(df['time'] >= '2019-02-07 00:00:00+07:00') & (df['time'] <= '2019-02-11 23:59:59+07:00')]
+```
+```python
+df.shape
+```
+    (2761112, 16)
+    
 Create a function for counting hashtags.
 
 ```python
@@ -324,16 +368,19 @@ def count_hashtags(df):
     top = pd.DataFrame(Series(hashtag_list).value_counts(), columns=['count'])
     return(top)
 ```
-Count all the hashtags and select only the top 10
+Count all the hashtags and select only the top 15
 
 ```python
+
 # Count hashtags and store a list of top hashtags in tags
 df_top = count_hashtags(df)
-tags = df_top[0:10].index.tolist()
+tags = df_top[0:15].index.tolist()
 print(tags)
 ```
 
-    ['#ไทยรักษาชาติ', '#ทรงพระสเลนเดอร์', '#เลือกตั้ง62', '#เลือกตั้งปี62', '#อนาคตใหม่', '#แม่มาแล้วธานอส', '#พระราชโองการ', '#ทรงพระสแลนด์เดอร์', '#พรรคอนาคตใหม่', '#เลือกตั้ง2562']
+    ['#ไทยรักษาชาติ', '#เลือกตั้ง62', '#ทรงพระสเลนเดอร์', '#เลือกตั้งปี62', '#อนาคตใหม่', '#แม่มาแล้วธานอส', '#พระราชโองการ', '#ทรงพระสแลนด์เดอร์', '#ฟ้ารักพ่อ', '#ไทยรัฐเลือกตั้ง62', '#เลือกตั้ง2562', '#พรรคอนาคตใหม่', '#tucuball73', '#ฟ้ารักพ่อเพราะนโยบายของพ่อ', '#ทรงพระแคนเซิล']
+
+
 
 Create new columns from the top hashtags, if a tweet contains a given hashtag = 1, if not = 0
 
@@ -346,7 +393,7 @@ Count the number of hashtags per minute. I suggest using 'groupby' rather than '
 
 ```python
 # Counting hashtags per minute
-df['time'] = pd.DatetimeIndex(df['created_at'])
+# df['time'] = pd.DatetimeIndex(df['created_at'])
 grouper = df.groupby([pd.Grouper(key='time', freq = '1Min')])
 df1 = grouper[[s for s in tags]].sum()
 ```
@@ -357,12 +404,10 @@ Convert from wide to long formate and deal with the time zone.
 df1.reset_index(level=0, inplace=True)
 df1 = df1.melt(id_vars='time')
 df1['time'] = pd.to_datetime(df1['time'], format='%Y-%b-%d %H:%M:%S.%f').dt.tz_localize('UTC').dt.tz_convert('Asia/Bangkok')
-```
-
-```python
 # Remove timezone just in case
 df1['time'] = df1['time'].dt.tz_localize(None)
 ```
+
 Plotting with Plotly
 
 ```python
@@ -376,7 +421,7 @@ plotly.tools.set_credentials_file(username='taozaze', api_key=key)
 
 
 ```python
-# Generate the data for plotly
+# Graph Time Series
 d={}
 data = []
 for tag in tags:
@@ -388,31 +433,45 @@ for tag in tags:
         )
         data.append(d["trace_{0}".format(tag)])
 
+# slider set up:
+layout = dict(
+    title='Tweet Time Distribution by Hashtag',
+    xaxis=dict(
+        title = 'Time',
+        rangeselector=dict(
+            buttons=list([
+                dict(count=1,
+                     label='1d',
+                     step='day',
+                     stepmode='backward'),
+                dict(count=6,
+                     label='6h',
+                     step='hour',
+                     stepmode='backward'),
+                dict(count=1,
+                    label='1h',
+                    step='hour',
+                    stepmode='backward'),
+                dict(step='all')
+            ])
+        ),
+        rangeslider=dict(
+            visible = True
+        ),
+        type='date'
+    ),
+    yaxis = dict(title = 'Tweets Per Minute')
+)
+py.iplot(go.Figure(data=data, layout=layout), filename = 'slider-line', auto_open=True)
 ```
-
-
-```python
-# Layout and plot
-layout = dict(title = 'Tweet Time Distribution by Hashtag',
-              xaxis = dict(title = 'Time'),
-              yaxis = dict(title = 'Tweets Per Minute'),
-              )
-
-py.iplot(go.Figure(data=data, layout=layout), filename = 'basic-line', auto_open=True)
-```
-
-
-
-
-<iframe id="igraph" scrolling="no" style="border:none;" seamless="seamless" src="https://plot.ly/~taozaze/7.embed" height="525px" width="100%"></iframe>
+<iframe id="igraph" scrolling="no" style="border:none;" seamless="seamless" src="https://plot.ly/~taozaze/15.embed" height="525px" width="100%"></iframe>
 
 
 
 
 ```python
 # Creat bar plot for top hashtags
-
-top_hash = df_top.reset_index()[0:10]
+top_hash = df_top.reset_index()[0:15]
 data = [
     go.Bar(
         x=top_hash['index'], # assign x as the dataframe column 'x'
@@ -428,5 +487,4 @@ layout = dict(title = 'Top Hashtags',
 
 py.iplot(go.Figure(data=data, layout=layout), filename = 'pandas-bar-chart', auto_open=True)
 ```
-
 <iframe id="igraph" scrolling="no" style="border:none;" seamless="seamless" src="https://plot.ly/~taozaze/9.embed" height="525px" width="100%"></iframe>
