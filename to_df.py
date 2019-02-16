@@ -70,7 +70,8 @@ for file in tweet_files:
             tweets = []
             data = json.loads(line)
             tweets.extend([data['id'], data['created_at'], data['user']['screen_name'], data['user']['id'],
-                           getText(data), data['retweet_count'], data['favorite_count'], data['in_reply_to_status_id'],
+                           getText(data), data['retweet_count'], data['favorite_count'],
+                           0 if ('retweeted_status' not in data) else 1, data['in_reply_to_status_id'],
                            data['in_reply_to_user_id'], data['user']['location'], data['place']['full_name']
                            if data['place'] != None else '',
                            hash_parse(data['entities']['hashtags']), data['place']['country_code']
