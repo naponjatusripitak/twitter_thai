@@ -308,7 +308,8 @@ for file in tweet_files:
             tweets = []
             data = json.loads(line)
             tweets.extend([data['id'], data['created_at'], data['user']['screen_name'], data['user']['id'],
-                           getText(data), data['retweet_count'], data['favorite_count'], data['in_reply_to_status_id'],
+                           getText(data), data['retweet_count'], data['favorite_count'],
+                           0 if ('retweeted_status' not in data) else 1, data['in_reply_to_status_id'],
                            data['in_reply_to_user_id'], data['user']['location'], data['place']['full_name']
                            if data['place'] != None else '',
                            hash_parse(data['entities']['hashtags']), data['place']['country_code']
@@ -327,9 +328,10 @@ First, we read in the csv files.
 
 ```python
 # Applying the function
-keys =  ['id', 'created_at', 'user_name', 'user_id', 'text', 'retweet_count', 'favorite_count', 'in_reply_to_status_id',
+keys =  ['id', 'created_at', 'user_name', 'user_id', 'text', 'retweet_count', 'favorite_count', 'retweeted_status', 'in_reply_to_status_id',
               'in_reply_to_user_id', 'user_location', 'place', 'hashtags', 'country_code', 'long', 'latt']
 df= pd.read_csv('tweets.csv', names = keys, converters={'hashtags': eval}) # use eval in order to retain list type object for hashtags
+
 
 ```
 Drop the duplicates.
