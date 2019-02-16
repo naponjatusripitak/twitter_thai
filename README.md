@@ -1,6 +1,6 @@
 # Scraping and Analyzing Twitter Data on Thai Politics
 
-This project is an attempt to collect and analyze data on how Twitter users react to important political events in Thailand in February 2019. Please check out [my blog post](https://naponjatusripitak.github.io/2019-02-12-TwitterAnalysis/) where I provide a brief overview of the project and the results.
+This project is an attempt to collect and analyze data on how Twitter users react to important political events in Thailand in February 2019. Please check out [my blog post](https://naponjatusripitak.github.io/2019-02-11-TwitterAnalysis/) where I provide a brief overview of the project and the results.
 
 I draw inspiration from Alexander Galea's [tutorial](https://galeascience.wordpress.com/2016/03/18/collecting-twitter-data-with-python/) on using Tweepy to collect data from Twitter Search API. 
 
@@ -308,7 +308,8 @@ for file in tweet_files:
             tweets = []
             data = json.loads(line)
             tweets.extend([data['id'], data['created_at'], data['user']['screen_name'], data['user']['id'],
-                           getText(data), data['retweet_count'], data['favorite_count'], data['in_reply_to_status_id'],
+                           getText(data), data['retweet_count'], data['favorite_count'],
+                           0 if ('retweeted_status' not in data) else 1, data['in_reply_to_status_id'],
                            data['in_reply_to_user_id'], data['user']['location'], data['place']['full_name']
                            if data['place'] != None else '',
                            hash_parse(data['entities']['hashtags']), data['place']['country_code']
@@ -327,9 +328,10 @@ First, we read in the csv files.
 
 ```python
 # Applying the function
-keys =  ['id', 'created_at', 'user_name', 'user_id', 'text', 'retweet_count', 'favorite_count', 'in_reply_to_status_id',
+keys =  ['id', 'created_at', 'user_name', 'user_id', 'text', 'retweet_count', 'favorite_count', 'retweeted_status', 'in_reply_to_status_id',
               'in_reply_to_user_id', 'user_location', 'place', 'hashtags', 'country_code', 'long', 'latt']
 df= pd.read_csv('tweets.csv', names = keys, converters={'hashtags': eval}) # use eval in order to retain list type object for hashtags
+
 
 ```
 Drop the duplicates.
@@ -488,3 +490,86 @@ layout = dict(title = 'Top Hashtags',
 py.iplot(go.Figure(data=data, layout=layout), filename = 'pandas-bar-chart', auto_open=True)
 ```
 <iframe id="igraph" scrolling="no" style="border:none;" seamless="seamless" src="https://plot.ly/~taozaze/9.embed" height="525px" width="100%"></iframe>
+
+For buttons-enabled chart:
+
+```python
+# Count Hashtags for Feb 7 - 11
+df_top_feb_7_11 = count_hashtags(df).reset_index()[0:15]
+
+# Create dataframes for each day
+d = {}
+for i in [7, 8, 9, 10, 11]:
+    d['df_top_feb_{}'.format(i)] = count_hashtags(df[(df['time'] >= '2019-02-0{} 00:00:00+07:00'.format(i)) & (df['time'] <= '2019-02-0{} 23:59:59+07:00'.format(i))]).reset_index()[0:15]
+
+# Create bar charts
+import plotly.plotly as py
+import plotly.graph_objs as go 
+
+from datetime import datetime
+import pandas as pd
+
+trace = {}
+data = []
+
+trace_all = go.Bar(
+        x=df_top_feb_7_11['index'], # assign x as the dataframe column 'x'
+        y=df_top_feb_7_11['count'],
+        name = 'All')
+
+for i in [7, 8, 9, 10, 11]:
+    trace['{}'.format(i)] = go.Bar(
+        x= d['df_top_feb_{}'.format(i)]['index'],
+        y= d['df_top_feb_{}'.format(i)]['count'],
+        name = 'Feb {}'.format(i),
+        visible = False
+    )
+    data.append(trace["{0}".format(i)])
+    
+data.append(trace_all)
+        
+updatemenus = list([
+    dict(type="buttons",
+         active=-1,
+         buttons=list([
+            dict(label = 'Feb 7',
+                 method = 'update',
+                 args = [{'visible': [True, False, False, False, False, False]},
+                         {'title': 'Top Hashtags on Feb 7'}]),
+              dict(label = 'Feb 8',
+                 method = 'update',
+                 args = [{'visible': [False, True, False, False, False, False]},
+                         {'title': 'Top Hashtags on Feb 8'}]),
+              dict(label = 'Feb 9',
+                 method = 'update',
+                 args = [{'visible': [False, False, True, False, False, False]},
+                         {'title': 'Top Hashtags on Feb 9'}]),
+              dict(label = 'Feb 10',
+                 method = 'update',
+                 args = [{'visible': [False, False, False, True, False, False]},
+                         {'title': 'Top Hashtags on Feb 10'}]),
+             dict(label = 'Feb 11',
+                 method = 'update',
+                 args = [{'visible': [False, False, False, False, True, False]},
+                         {'title': 'Top Hashtags on Feb 11'}]),
+                dict(label = 'All',
+                 method = 'update',
+                 args = [{'visible': [False, False, False, False, False, True]},
+                         {'title': 'Top Hashtags (Feb 7-11)'}])
+        ]),
+         direction = 'up',
+         xanchor = 'right',
+         yanchor = 'top',
+         x = 1,
+         y = 1
+    )
+])
+
+layout = dict(title='Top Hashtags (Feb 7-11)',
+              yaxis = dict(title = 'Hashtag Frequency'), showlegend=False,
+              updatemenus=updatemenus)
+
+py.iplot(go.Figure(data=data, layout=layout), filename = 'buttons-bar-chart', auto_open=True)
+```
+<iframe id="igraph" scrolling="no" style="border:none;" seamless="seamless" src="https://plot.ly/~taozaze/17.embed" height="525px" width="100%"></iframe>
+
