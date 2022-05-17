@@ -1,6 +1,6 @@
 # Scraping and Analyzing Twitter Data on Thai Politics
 
-This project is an attempt to collect and analyze data on how Twitter users react to important political events in Thailand in February 2019. Please check out [my blog post](https://naponjatusripitak.github.io/2019-02-11-TwitterAnalysis/) where I provide a brief overview of the project and the results.
+This project is an attempt to collect and analyze data on how Twitter users react to important political events in Thailand in February 2019. Please check out [my blog post](https://naponjatusripitak.github.io/blog/2019/TwitterAnalysis/) where I provide a brief overview of the project and the results.
 
 I draw inspiration from Alexander Galea's [tutorial](https://galeascience.wordpress.com/2016/03/18/collecting-twitter-data-with-python/) on using Tweepy to collect data from Twitter Search API. 
 
